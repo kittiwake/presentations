@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Аутентификация и управление доступом — Урок 2</title>
+<style>
+  :root{
+    --bg:#0a0e17; --bg2:#111827; --card:#151c2c; --line:#243044;
+    --fg:#e5e9f0; --muted:#8b98ad;
+    --accent:#4f9cf9; --accent2:#38d9a9; --warn:#f5a623; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 20% -10%,#16213a 0%,var(--bg) 60%);
+    color:var(--fg); overflow:hidden;
+  }
+  .deck{height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
+  .slide{
+    display:none; width:min(1080px,100%); max-height:92vh; overflow:auto;
+    background:linear-gradient(180deg,var(--card),#111827);
+    border:1px solid var(--line); border-radius:20px;
+    padding:42px 50px; box-shadow:0 24px 70px rgba(0,0,0,.55);
+    animation:fade .35s ease;
+  }
+  .slide.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  h1{font-size:2.5rem;line-height:1.12;margin-bottom:16px;color:#fff;font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:1.65rem;margin-bottom:20px;color:var(--accent);font-weight:700}
+  h2::after{content:"";display:block;width:56px;height:3px;margin-top:8px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px}
+  h3{font-size:1.12rem;margin:16px 0 8px;color:var(--accent2);font-weight:600}
+  p,li{font-size:1.06rem;line-height:1.62;color:var(--fg)}
+  ul,ol{margin:10px 0 10px 24px}
+  li{margin:7px 0}
+  .muted{color:var(--muted)}
+  .lead{font-size:1.18rem;color:var(--muted);margin-top:12px}
+  .tag{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.8rem;font-weight:600;
+       background:rgba(79,156,249,.14);color:var(--accent);border:1px solid rgba(79,156,249,.35);margin-bottom:16px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px;transition:.2s}
+  .card:hover{border-color:rgba(79,156,249,.45);transform:translateY(-2px)}
+  .card h3{margin-top:0}
+  .card.c{border-left:4px solid var(--accent)}
+  .card.i{border-left:4px solid var(--warn)}
+  .card.a{border-left:4px solid var(--accent2)}
+  .card .big{font-size:2rem;font-weight:800;line-height:1;margin-bottom:6px}
+  .card.c .big{color:var(--accent)} .card.i .big{color:var(--warn)} .card.a .big{color:var(--accent2)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.98rem}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#0b1220;color:var(--accent);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+
+  .formula{background:#0b1220;border-left:4px solid var(--accent2);padding:14px 18px;border-radius:10px;
+           font-family:ui-monospace,Consolas,monospace;margin:14px 0;color:#a5f3fc;font-size:1.05rem;text-align:center}
+  .callout{background:rgba(79,156,249,.08);border:1px solid rgba(79,156,249,.3);border-radius:12px;padding:14px 18px;margin:14px 0}
+  .callout.warn{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.35)}
+  .callout.danger{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.35)}
+  .callout.ok{background:rgba(56,217,169,.08);border-color:rgba(56,217,169,.35)}
+
+  .badge{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border-radius:6px;
+         font-weight:700;font-size:.85rem;margin-right:6px}
+  .b-c{background:rgba(79,156,249,.2);color:#7cb8ff}
+  .b-i{background:rgba(245,166,35,.2);color:#ffc76b}
+  .b-a{background:rgba(56,217,169,.2);color:#6ff0c8}
+
+  .case{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:8px 0}
+  .case b{color:var(--accent)}
+
+  .reveal-btn{
+    display:inline-block; margin-top:16px; padding:10px 22px;
+    background:var(--accent); color:#04101f; border:none; border-radius:10px;
+    font-size:1rem; font-weight:700; cursor:pointer; transition:.2s;
+  }
+  .reveal-btn:hover{filter:brightness(1.1); transform:translateY(-1px)}
+  .answers{margin-top:16px}
+
+  .nav{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;gap:10px;align-items:center;background:rgba(10,14,23,.85);
+    border:1px solid var(--line);border-radius:999px;padding:8px 14px;backdrop-filter:blur(10px);
+  }
+  .nav button{background:var(--bg2);color:var(--fg);border:1px solid var(--line);border-radius:999px;
+              padding:8px 18px;font-size:1rem;cursor:pointer;transition:.2s}
+  .nav button:hover{background:var(--accent);color:#04101f;border-color:var(--accent)}
+  .nav .counter{color:var(--muted);font-size:.9rem;min-width:74px;text-align:center}
+  .hint{position:fixed;top:14px;right:18px;font-size:.78rem;color:var(--muted);
+        background:rgba(10,14,23,.7);padding:6px 12px;border-radius:8px;border:1px solid var(--line)}
+  .progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+            width:0;transition:width .3s;z-index:10}
+
+  @media(max-width:760px){
+    .grid,.grid3{grid-template-columns:1fr}
+    .slide{padding:26px 20px}
+    h1{font-size:1.7rem} h2{font-size:1.3rem}
+    p,li{font-size:.98rem}
+    table{font-size:.85rem}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="hint">← → · пробел · F — полный экран</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. ТИТУЛ -->
+  <section class="slide active">
+    <span class="tag">Основы информационных технологий · Урок 2</span>
+    <h1><span class="grad">Аутентификация</span><br>и управление доступом</h1>
+    <p class="lead">Пароли, хеши, 2FA, RBAC и минимум привилегий</p>
+    <div class="grid" style="margin-top:30px">
+      <div>
+        <h3>На этом уроке</h3>
+        <ul>
+          <li>Аутентификация vs авторизация</li>
+          <li>Три фактора аутентификации</li>
+          <li>Пароли: энтропия и хеширование</li>
+          <li>2FA/MFA: SMS, TOTP, ключи, passkeys</li>
+          <li>Управление доступом: RBAC, минимум привилегий</li>
+        </ul>
+      </div>
+      <div class="callout">
+        <p class="muted">«Сначала — кто ты. Потом — что тебе можно.<br>Никогда наоборот».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Аутентификация vs авторизация -->
+  <section class="slide">
+    <h2>Аутентификация vs авторизация</h2>
+    <div class="grid">
+      <div class="card c">
+        <h3>Аутентификация</h3>
+        <p><b>«Кто ты?»</b></p>
+        <p>Подтверждение личности.</p>
+        <p class="muted">Логин + пароль, отпечаток, Face ID</p>
+      </div>
+      <div class="card a">
+        <h3>Авторизация</h3>
+        <p><b>«Что тебе можно?»</b></p>
+        <p>Проверка прав после входа.</p>
+        <p class="muted">Доступ к папке, право удалять, роль админа</p>
+      </div>
+    </div>
+    <div class="callout warn">
+      <b>Порядок:</b> сначала аутентификация, потом авторизация. Нельзя дать права тому, кого не опознали.
+    </div>
+    <p class="muted">Аналогия: паспортный контроль (кто ты) → пропуск в конкретные двери (что можно).</p>
+  </section>
+
+  <!-- 3. Три фактора -->
+  <section class="slide">
+    <h2>Три фактора аутентификации</h2>
+    <div class="grid3">
+      <div class="card c">
+        <div class="big">1</div>
+        <h3>Знание</h3>
+        <p>Что ты <b>знаешь</b>.</p>
+        <p class="muted">Пароль, PIN, секретный вопрос</p>
+      </div>
+      <div class="card i">
+        <div class="big">2</div>
+        <h3>Владение</h3>
+        <p>Что у тебя <b>есть</b>.</p>
+        <p class="muted">Телефон (SMS/TOTP), аппаратный ключ, карта</p>
+      </div>
+      <div class="card a">
+        <div class="big">3</div>
+        <h3>Биометрия</h3>
+        <p>Кто ты <b>есть</b>.</p>
+        <p class="muted">Отпечаток, лицо, голос</p>
+      </div>
+    </div>
+    <div class="callout">
+      <b>MFA</b> — два и более <u>разных</u> фактора. Пароль + SMS — MFA. Два пароля — <b>нет</b> (оба — знание).
+    </div>
+  </section>
+
+  <!-- 4. Энтропия пароля -->
+  <section class="slide">
+    <h2>Энтропия пароля</h2>
+    <p><b>Энтропия</b> — мера сложности подбора, в битах. Чем больше — тем лучше.</p>
+    <div class="formula">Энтропия ≈ длина × log₂(размер алфавита)</div>
+    <table>
+      <tr><th>Пароль</th><th>Алфавит</th><th>Длина</th><th>Энтропия</th><th>Оценка</th></tr>
+      <tr><td><code>123456</code></td><td>10 цифр</td><td>6</td><td>~20 бит</td><td><span class="badge b-i">слабо</span></td></tr>
+      <tr><td><code>qwerty</code></td><td>26 букв</td><td>6</td><td>~28 бит</td><td><span class="badge b-i">слабо</span></td></tr>
+      <tr><td><code>Tr0ub4dor&amp;3</code></td><td>~72</td><td>11</td><td>~65 бит</td><td><span class="badge b-c">норм</span></td></tr>
+      <tr><td><code>correct horse battery staple</code></td><td>26+пробел</td><td>28</td><td>~130 бит</td><td><span class="badge b-a">отлично</span></td></tr>
+    </table>
+    <div class="callout ok">
+      <b>Вывод:</b> <u>длина важнее сложности</u>. Длинная фраза из слов надёжнее короткого «сложного» пароля.
+    </div>
+  </section>
+
+  <!-- 5. Хеширование паролей -->
+  <section class="slide">
+    <h2>Хеширование паролей</h2>
+    <p><b>Хеш</b> — необратимое преобразование: из пароля получают «отпечаток», из отпечатка пароль <b>не восстановить</b>.</p>
+    <div class="formula">пароль → [хеш-функция] → хеш</div>
+    <div class="grid">
+      <div>
+        <h3>Как хранят на сервере</h3>
+        <ol>
+          <li>Регистрация: <code>хеш = hash(пароль + соль)</code> → сохраняют <b>только хеш</b></li>
+          <li>Вход: <code>hash(введённый + соль)</code> → сравнивают с сохранённым</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Соль</h3>
+        <p>Случайная строка перед хешированием. Одинаковые пароли → <b>разные</b> хеши. Защита от «радужных таблиц».</p>
+      </div>
+    </div>
+    <div class="callout danger">
+      <b>Не хранить в открытом виде:</b> при утечке БД злоумышленник получит все пароли сразу. С хешами — «отпечатки», которые <b>дорого</b> подбирать.
+    </div>
+    <p class="muted"><b>Медленные хеши для паролей:</b> bcrypt, scrypt, Argon2. <b>Не</b> MD5/SHA-1 — они быстрые.</p>
+  </section>
+
+  <!-- 6. Менеджеры паролей -->
+  <section class="slide">
+    <h2>Менеджеры паролей</h2>
+    <div class="grid">
+      <div>
+        <h3>Что делают</h3>
+        <ul>
+          <li>Хранят пароли в <b>зашифрованном</b> виде</li>
+          <li>Генерируют <b>уникальные</b> длинные пароли</li>
+          <li>Нужно помнить <b>один</b> мастер-пароль (длинный!)</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Примеры</h3>
+        <ul>
+          <li>Bitwarden</li>
+          <li>KeePass</li>
+          <li>1Password</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout ok">
+      <b>Базовый минимум:</b> менеджер паролей + 2FA.
+    </div>
+  </section>
+
+  <!-- 7. 2FA: виды -->
+  <section class="slide">
+    <h2>2FA: виды второго фактора</h2>
+    <table>
+      <tr><th>Вид</th><th>Как работает</th><th>Надёжность</th><th>Минусы</th></tr>
+      <tr><td><b>SMS-код</b></td><td>Код по SMS</td><td><span class="badge b-i">средняя</span></td><td>SIM-swap, перехват</td></tr>
+      <tr><td><b>TOTP</b></td><td>Код в приложении, 30 с</td><td><span class="badge b-a">высокая</span></td><td>Нужно приложение</td></tr>
+      <tr><td><b>Push</b></td><td>Подтверждение в приложении</td><td><span class="badge b-a">высокая</span></td><td>Зависит от сервиса</td></tr>
+      <tr><td><b>Аппаратный ключ</b></td><td>FIDO2 / YubiKey</td><td><span class="badge b-a">очень высокая</span></td><td>Купить, носить</td></tr>
+      <tr><td><b>Passkeys</b></td><td>Ключ в устройстве</td><td><span class="badge b-a">очень высокая</span></td><td>Нужна поддержка</td></tr>
+    </table>
+    <div class="callout warn">
+      <b>Почему SMS слабее:</b> номер можно угнать (SIM-swap), перехватить, код — выманить. TOTP и ключи <b>не передаются</b> по сети в открытом виде.
+    </div>
+  </section>
+
+  <!-- 8. Управление доступом -->
+  <section class="slide">
+    <h2>Управление доступом</h2>
+    <p>Авторизация решает, <b>что можно</b> после входа.</p>
+    <div class="grid3">
+      <div class="card c">
+        <h3>RBAC</h3>
+        <p>Права по <b>ролям</b>.</p>
+        <p class="muted">«Админ», «менеджер», «гость»</p>
+      </div>
+      <div class="card i">
+        <h3>ABAC</h3>
+        <p>Права по <b>атрибутам</b>.</p>
+        <p class="muted">«Отдел = X и время &lt; 18:00»</p>
+      </div>
+      <div class="card a">
+        <h3>MAC</h3>
+        <p>Жёсткие <b>метки</b>.</p>
+        <p class="muted">«Секретно», «ДСП»</p>
+      </div>
+    </div>
+    <div class="callout">
+      <b>RBAC — самый распространённый:</b> сотруднику дают роль, роль имеет права. Не «права на каждого», а «роль → права».
+    </div>
+  </section>
+
+  <!-- 9. Минимум привилегий -->
+  <section class="slide">
+    <h2>Минимум привилегий и default deny</h2>
+    <div class="grid">
+      <div class="card c">
+        <h3>Минимум привилегий</h3>
+        <p>Давать <b>только необходимые</b> права. Нужен отчёт — доступ к отчёту, а не ко всей базе.</p>
+        <p class="muted">Если аккаунт взломают — ущерб ограничен его правами.</p>
+      </div>
+      <div class="card a">
+        <h3>Default deny</h3>
+        <p>По умолчанию <b>всё закрыто</b>, открывается только нужное.</p>
+        <p class="muted">Безопаснее, чем «разрешить всё, потом запретить лишнее».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. Практика: энтропия -->
+  <section class="slide">
+    <h2>Практика: оценка энтропии</h2>
+    <p>Оцените сложность паролей (приблизительно, по формуле):</p>
+    <div class="case"><b>1.</b> <code>123456</code></div>
+    <div class="case"><b>2.</b> <code>Summer2024!</code></div>
+    <div class="case"><b>3.</b> <code>correct horse battery staple</code></div>
+    <button class="reveal-btn" onclick="toggle('ans1', this)">Показать ответ</button>
+    <div class="callout ok answers" id="ans1" hidden>
+      <b>1</b> — ~20 бит (слабо). <b>2</b> — ~50 бит (средне, но предсказуемо: сезон + год + «!»). <b>3</b> — ~130 бит (отлично: длина решает).
+    </div>
+  </section>
+
+  <!-- 11. Практика: RBAC -->
+  <section class="slide">
+    <h2>Практика: матрица доступа (RBAC)</h2>
+    <p><b>Ситуация:</b> бухгалтер, менеджер, админ БД, директор. Системы: 1С, CRM, БД, почта.</p>
+    <p>Составьте матрицу доступа с <b>минимумом привилегий</b>.</p>
+    <button class="reveal-btn" onclick="toggle('ans2', this)">Показать пример</button>
+    <div class="answers" id="ans2" hidden>
+      <table>
+        <tr><th>Роль</th><th>1С</th><th>CRM</th><th>БД</th><th>Почта</th></tr>
+        <tr><td>Бухгалтер</td><td>чтение/запись</td><td>—</td><td>—</td><td>своя</td></tr>
+        <tr><td>Менеджер</td><td>—</td><td>чтение/запись</td><td>—</td><td>своя</td></tr>
+        <tr><td>Админ БД</td><td>—</td><td>—</td><td>полный</td><td>своя</td></tr>
+        <tr><td>Директор</td><td>чтение</td><td>чтение</td><td>чтение отчётов</td><td>своя</td></tr>
+      </table>
+      <p class="muted">Админу БД не нужен CRM; директору — только чтение.</p>
+    </div>
+  </section>
+
+  <!-- 12. Обсуждение -->
+  <section class="slide">
+    <h2>Обсуждение</h2>
+    <ol>
+      <li>Почему SMS-2FA слабее TOTP и аппаратного ключа?</li>
+      <li>Что такое passkeys и почему за ними будущее?</li>
+      <li>Почему хеширование паролей важно? Что будет, если БД утечёт с хешами?</li>
+      <li>Почему менеджер паролей безопаснее, чем один пароль на всё?</li>
+      <li>Что не так с политикой «меняем пароль каждые 30 дней»?</li>
+    </ol>
+    <div class="callout">
+      <b>Подсказка:</b> современные рекомендации — длина + 2FA + проверка на утечки, а не частая смена.
+    </div>
+  </section>
+
+  <!-- 13. Итоги -->
+  <section class="slide">
+    <h2>Итоги урока</h2>
+    <ul>
+      <li><b>Аутентификация</b> — «кто ты». <b>Авторизация</b> — «что можно».</li>
+      <li><b>Три фактора:</b> знание, владение, биометрия. <b>MFA</b> — два и более разных.</li>
+      <li><b>Пароли:</b> длина важнее сложности; хранят <b>хеши</b> с солью (bcrypt/Argon2).</li>
+      <li><b>2FA:</b> TOTP и ключи надёжнее SMS; passkeys — тренд.</li>
+      <li><b>Доступ:</b> RBAC, минимум привилегий, default deny.</li>
+    </ul>
+    <h3>Вопросы для самопроверки</h3>
+    <ol>
+      <li>Чем аутентификация отличается от авторизации?</li>
+      <li>Назовите три фактора аутентификации.</li>
+      <li>«Пароль + секретный вопрос» — это MFA?</li>
+      <li>Почему пароли хешируют? Что такое соль?</li>
+      <li>Чем TOTP надёжнее SMS?</li>
+      <li>Что такое RBAC и минимум привилегий?</li>
+    </ol>
+  </section>
+
+  <!-- 14. Финал -->
+  <section class="slide">
+    <h2>Спасибо за внимание</h2>
+    <p class="lead">Вопросы?</p>
+    <div class="callout ok" style="margin-top:24px">
+      <b>Следующий урок:</b> сетевая безопасность — HTTPS, VPN, firewall, Wi-Fi.
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Назад">←</button>
+  <span class="counter" id="counter">1 / 14</span>
+  <button id="next" aria-label="Вперёд">→</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let i = 0;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s,k) => s.classList.toggle('active', k === i));
+    counter.textContent = (i+1) + ' / ' + slides.length;
+    progress.style.width = ((i+1)/slides.length*100) + '%';
+    slides[i].scrollTop = 0;
+  }
+  document.getElementById('next').onclick = () => show(i+1);
+  document.getElementById('prev').onclick = () => show(i-1);
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight',' ','PageDown'].includes(e.key)) { e.preventDefault(); show(i+1); }
+    if (['ArrowLeft','PageUp'].includes(e.key)) { e.preventDefault(); show(i-1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length-1);
+    if (e.key.toLowerCase() === 'f') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  let x0 = null;
+  document.addEventListener('touchstart', e => x0 = e.touches[0].clientX, {passive:true});
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1));
+    x0 = null;
+  }, {passive:true});
+
+  // Спойлер: показать/скрыть блок и сменить текст кнопки
+  function toggle(id, btn){
+    const el = document.getElementById(id);
+    el.hidden = !el.hidden;
+    btn.textContent = el.hidden ? 'Показать ответ' : 'Скрыть ответ';
+  }
+
+  show(0);
+</script>
+</body>
+</html>
