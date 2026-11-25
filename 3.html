@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Сетевая безопасность — Урок 3</title>
+<style>
+  :root{
+    --bg:#0a0e17; --bg2:#111827; --card:#151c2c; --line:#243044;
+    --fg:#e5e9f0; --muted:#8b98ad;
+    --accent:#4f9cf9; --accent2:#38d9a9; --warn:#f5a623; --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(1200px 600px at 20% -10%,#16213a 0%,var(--bg) 60%);
+    color:var(--fg); overflow:hidden;
+  }
+  .deck{height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
+  .slide{
+    display:none; width:min(1080px,100%); max-height:92vh; overflow:auto;
+    background:linear-gradient(180deg,var(--card),#111827);
+    border:1px solid var(--line); border-radius:20px;
+    padding:42px 50px; box-shadow:0 24px 70px rgba(0,0,0,.55);
+    animation:fade .35s ease;
+  }
+  .slide.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  h1{font-size:2.5rem;line-height:1.12;margin-bottom:16px;color:#fff;font-weight:800}
+  h1 .grad{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  h2{font-size:1.65rem;margin-bottom:20px;color:var(--accent);font-weight:700}
+  h2::after{content:"";display:block;width:56px;height:3px;margin-top:8px;background:linear-gradient(90deg,var(--accent),transparent);border-radius:2px}
+  h3{font-size:1.12rem;margin:16px 0 8px;color:var(--accent2);font-weight:600}
+  p,li{font-size:1.06rem;line-height:1.62;color:var(--fg)}
+  ul,ol{margin:10px 0 10px 24px}
+  li{margin:7px 0}
+  .muted{color:var(--muted)}
+  .lead{font-size:1.18rem;color:var(--muted);margin-top:12px}
+  .tag{display:inline-block;padding:4px 12px;border-radius:999px;font-size:.8rem;font-weight:600;
+       background:rgba(79,156,249,.14);color:var(--accent);border:1px solid rgba(79,156,249,.35);margin-bottom:16px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:20px;transition:.2s}
+  .card:hover{border-color:rgba(79,156,249,.45);transform:translateY(-2px)}
+  .card h3{margin-top:0}
+  .card.c{border-left:4px solid var(--accent)}
+  .card.i{border-left:4px solid var(--warn)}
+  .card.a{border-left:4px solid var(--accent2)}
+  .card.d{border-left:4px solid var(--danger)}
+  .card .big{font-size:2rem;font-weight:800;line-height:1;margin-bottom:6px}
+  .card.c .big{color:var(--accent)} .card.i .big{color:var(--warn)} .card.a .big{color:var(--accent2)} .card.d .big{color:var(--danger)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.98rem}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+  th{background:#0b1220;color:var(--accent);font-weight:600}
+  tr:nth-child(even) td{background:rgba(255,255,255,.025)}
+
+  .formula{background:#0b1220;border-left:4px solid var(--accent2);padding:14px 18px;border-radius:10px;
+           font-family:ui-monospace,Consolas,monospace;margin:14px 0;color:#a5f3fc;font-size:1.05rem;text-align:center}
+  .callout{background:rgba(79,156,249,.08);border:1px solid rgba(79,156,249,.3);border-radius:12px;padding:14px 18px;margin:14px 0}
+  .callout.warn{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.35)}
+  .callout.danger{background:rgba(255,107,107,.08);border-color:rgba(255,107,107,.35)}
+  .callout.ok{background:rgba(56,217,169,.08);border-color:rgba(56,217,169,.35)}
+
+  .badge{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border-radius:6px;
+         font-weight:700;font-size:.85rem;margin-right:6px}
+  .b-c{background:rgba(79,156,249,.2);color:#7cb8ff}
+  .b-i{background:rgba(245,166,35,.2);color:#ffc76b}
+  .b-a{background:rgba(56,217,169,.2);color:#6ff0c8}
+  .b-d{background:rgba(255,107,107,.2);color:#ff9b9b}
+
+  .case{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:8px 0}
+  .case b{color:var(--accent)}
+
+  .reveal-btn{
+    display:inline-block; margin-top:16px; padding:10px 22px;
+    background:var(--accent); color:#04101f; border:none; border-radius:10px;
+    font-size:1rem; font-weight:700; cursor:pointer; transition:.2s;
+  }
+  .reveal-btn:hover{filter:brightness(1.1); transform:translateY(-1px)}
+  .answers{margin-top:16px}
+
+  .nav{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    display:flex;gap:10px;align-items:center;background:rgba(10,14,23,.85);
+    border:1px solid var(--line);border-radius:999px;padding:8px 14px;backdrop-filter:blur(10px);
+  }
+  .nav button{background:var(--bg2);color:var(--fg);border:1px solid var(--line);border-radius:999px;
+              padding:8px 18px;font-size:1rem;cursor:pointer;transition:.2s}
+  .nav button:hover{background:var(--accent);color:#04101f;border-color:var(--accent)}
+  .nav .counter{color:var(--muted);font-size:.9rem;min-width:74px;text-align:center}
+  .hint{position:fixed;top:14px;right:18px;font-size:.78rem;color:var(--muted);
+        background:rgba(10,14,23,.7);padding:6px 12px;border-radius:8px;border:1px solid var(--line)}
+  .progress{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));
+            width:0;transition:width .3s;z-index:10}
+
+  @media(max-width:760px){
+    .grid,.grid3{grid-template-columns:1fr}
+    .slide{padding:26px 20px}
+    h1{font-size:1.7rem} h2{font-size:1.3rem}
+    p,li{font-size:.98rem}
+    table{font-size:.85rem}
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="hint">← → · пробел · F — полный экран</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. ТИТУЛ -->
+  <section class="slide active">
+    <span class="tag">Основы информационных технологий · Урок 3</span>
+    <h1><span class="grad">Сетевая безопасность</span><br>HTTPS, VPN, firewall, Wi-Fi</h1>
+    <p class="lead">Как защитить канал и периметр сети</p>
+    <div class="grid" style="margin-top:30px">
+      <div>
+        <h3>На этом уроке</h3>
+        <ul>
+          <li>Сетевые угрозы: sniffing, MITM, DDoS, evil twin</li>
+          <li>HTTPS/TLS: шифрование, сертификаты, HSTS</li>
+          <li>VPN, firewall, сегментация (VLAN)</li>
+          <li>Wi-Fi: WPA3, WPS, DHCP snooping</li>
+          <li>Практика: сертификат, HSTS, ufw</li>
+        </ul>
+      </div>
+      <div class="callout">
+        <p class="muted">«Открытый Wi-Fi — как разговор в людном месте.<br>Шифруйте или не говорите».</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Сетевые угрозы — обзор -->
+  <section class="slide">
+    <h2>Сетевые угрозы</h2>
+    <div class="grid3">
+      <div class="card d">
+        <h3>Sniffing</h3>
+        <p>Пассивный перехват трафика.</p>
+        <p class="muted">Wireshark, tcpdump. Защита: TLS, VPN.</p>
+      </div>
+      <div class="card d">
+        <h3>MITM</h3>
+        <p>Атакующий между клиентом и сервером.</p>
+        <p class="muted">Читает и меняет. Защита: сертификаты, HSTS, VPN.</p>
+      </div>
+      <div class="card d">
+        <h3>DDoS</h3>
+        <p>Массовая перегрузка сервера.</p>
+        <p class="muted">Ботнет. Защита: CDN, rate limiting.</p>
+      </div>
+      <div class="card d">
+        <h3>ARP-spoofing</h3>
+        <p>Подмена ARP: «шлюз — это я».</p>
+        <p class="muted">Трафик через атакующего. Защита: DAI, статические ARP.</p>
+      </div>
+      <div class="card d">
+        <h3>Evil twin</h3>
+        <p>Фальшивая точка доступа с тем же именем.</p>
+        <p class="muted">Защита: проверять сертификаты, VPN.</p>
+      </div>
+      <div class="card">
+        <h3>Общая защита</h3>
+        <p>HTTPS, VPN, firewall, проверка сертификатов.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Sniffing и MITM -->
+  <section class="slide">
+    <h2>Sniffing и MITM</h2>
+    <div class="grid">
+      <div class="card c">
+        <h3>Sniffing (прослушивание)</h3>
+        <ul>
+          <li>Пассивный перехват в той же сети</li>
+          <li>Без шифрования видны пароли, cookies</li>
+          <li>Инструменты: Wireshark, tcpdump</li>
+          <li>Защита: HTTPS/TLS, VPN</li>
+        </ul>
+      </div>
+      <div class="card i">
+        <h3>MITM (человек посередине)</h3>
+        <ul>
+          <li>Атакующий <b>между</b> клиентом и сервером</li>
+          <li>Может <b>читать и менять</b> трафик</li>
+          <li>Способы: evil twin, ARP-spoofing, подмена сертификата</li>
+          <li>Защита: проверка сертификатов, HSTS, VPN</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warn">
+      <b>Аналогия:</b> sniffing — кто-то слушает ваш разговор; MITM — кто-то <u>представляется</u> вашим собеседником.
+    </div>
+  </section>
+
+  <!-- 4. HTTPS/TLS: что даёт -->
+  <section class="slide">
+    <h2>HTTPS/TLS: что даёт</h2>
+    <p><b>TLS</b> — шифрование поверх TCP. <b>HTTPS = HTTP + TLS</b>.</p>
+    <div class="grid3" style="margin-top:16px">
+      <div class="card c">
+        <h3>Конфиденциальность</h3>
+        <p>Симметричное шифрование (AES) — содержимое не прочитать.</p>
+      </div>
+      <div class="card a">
+        <h3>Аутентификация</h3>
+        <p>Сертификат от CA подтверждает, что сервер — тот, за кого себя выдаёт.</p>
+      </div>
+      <div class="card i">
+        <h3>Целостность</h3>
+        <p>MAC/подпись — изменение пакета обнаруживается.</p>
+      </div>
+    </div>
+    <div class="callout ok">
+      Даже в открытом Wi-Fi содержимое защищено. Но <b>метаданные</b> (какие сайты) видны, и <b>фишинг</b> возможен — проверяйте домен.
+    </div>
+  </section>
+
+  <!-- 5. TLS-handshake -->
+  <section class="slide">
+    <h2>TLS-handshake (упрощённо)</h2>
+    <div class="case"><b>1.</b> <b>ClientHello</b> — версии, шифры, случайное число</div>
+    <div class="case"><b>2.</b> <b>ServerHello</b> — выбранный шифр + <b>сертификат</b></div>
+    <div class="case"><b>3.</b> <b>Проверка сертификата</b> — CA, срок, домен</div>
+    <div class="case"><b>4.</b> <b>Согласование ключей</b> — ECDHE → общий секрет</div>
+    <div class="case"><b>5.</b> <b>Шифрованная сессия</b> — симметричное шифрование</div>
+    <button class="reveal-btn" onclick="toggle('ans1', this)">Показать схему</button>
+    <div class="answers" id="ans1" hidden>
+      <div class="formula">Клиент → ClientHello → Сервер<br>Клиент ← ServerHello + сертификат ← Сервер<br>Клиент: проверка сертификата<br>Клиент ↔ согласование ключей (ECDHE) ↔ Сервер<br>Клиент ↔ шифрованная сессия (AES) ↔ Сервер</div>
+    </div>
+  </section>
+
+  <!-- 6. Сертификат -->
+  <section class="slide">
+    <h2>Сертификат: что внутри</h2>
+    <table>
+      <tr><th>Поле</th><th>Что значит</th></tr>
+      <tr><td><b>Subject</b></td><td>Кому выдан (домен, например <code>example.com</code>)</td></tr>
+      <tr><td><b>Issuer</b></td><td>Кем выдан (CA: Let's Encrypt, DigiCert)</td></tr>
+      <tr><td><b>Not Before / Not After</b></td><td>Срок действия</td></tr>
+      <tr><td><b>Публичный ключ</b></td><td>Для проверки подписи</td></tr>
+      <tr><td><b>SAN</b></td><td>Список доменов, на которые действует</td></tr>
+    </table>
+    <div class="callout warn">
+      Сертификат <b>подписан CA</b>. Браузер доверяет CA из встроенного списка. Самоподписанный → предупреждение.
+    </div>
+  </section>
+
+  <!-- 7. HSTS -->
+  <section class="slide">
+    <h2>HSTS (HTTP Strict Transport Security)</h2>
+    <p>Заголовок, который <b>заставляет</b> браузер использовать только HTTPS для домена.</p>
+    <div class="formula">Strict-Transport-Security: max-age=31536000; includeSubDomains</div>
+    <div class="grid">
+      <div>
+        <h3>Зачем</h3>
+        <ul>
+          <li>Защита от <b>SSL-stripping</b> (MITM подменяет HTTPS на HTTP)</li>
+          <li>Браузер <b>запоминает</b> HSTS и не даёт перейти на HTTP</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Проверка</h3>
+        <div class="formula">curl -sI https://example.com | grep -i strict-transport</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. VPN -->
+  <section class="slide">
+    <h2>VPN</h2>
+    <p><b>VPN</b> — шифрованный туннель между устройством и VPN-сервером.</p>
+    <div class="grid">
+      <div>
+        <h3>Зачем</h3>
+        <ul>
+          <li>Защита в открытом Wi-Fi</li>
+          <li>Скрыть содержимое от провайдера</li>
+          <li>Сменить видимый IP</li>
+          <li>Корпоративный доступ</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Протоколы</h3>
+        <ul>
+          <li>WireGuard (современный)</li>
+          <li>OpenVPN</li>
+          <li>IPsec</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout warn">
+      VPN <b>не заменяет</b> HTTPS. Он защищает канал, но если сайт по HTTP — внутри туннеля всё равно открытый текст.
+    </div>
+  </section>
+
+  <!-- 9. Firewall -->
+  <section class="slide">
+    <h2>Firewall</h2>
+    <p>Фильтр трафика по правилам (IP, порт, протокол, содержимое).</p>
+    <table>
+      <tr><th>Тип</th><th>Уровень</th><th>Что делает</th></tr>
+      <tr><td>Пакетный фильтр</td><td>3–4</td><td>IP/порт/протокол каждого пакета</td></tr>
+      <tr><td>Stateful</td><td>3–4</td><td>Помнит таблицу соединений</td></tr>
+      <tr><td>NGFW</td><td>3–7</td><td>Анализ приложений, URL, IPS</td></tr>
+    </table>
+    <div class="callout">
+      <b>Default deny:</b> по умолчанию всё запрещено, открывается только нужное.
+    </div>
+    <button class="reveal-btn" onclick="toggle('ans2', this)">Показать пример ufw</button>
+    <div class="answers" id="ans2" hidden>
+      <div class="formula">sudo ufw default deny incoming<br>sudo ufw default allow outgoing<br>sudo ufw allow 22/tcp<br>sudo ufw allow 443/tcp<br>sudo ufw enable</div>
+    </div>
+  </section>
+
+  <!-- 10. Сегментация -->
+  <section class="slide">
+    <h2>Сегментация сети (VLAN)</h2>
+    <div class="grid">
+      <div>
+        <h3>Что это</h3>
+        <p>Разделение сети на <b>изолированные сегменты</b>: гости, сотрудники, серверы, принтеры.</p>
+        <h3>Зачем</h3>
+        <p>Если один сегмент взломали — <b>остальные изолированы</b>. Гостевой Wi-Fi не видит серверы.</p>
+      </div>
+      <div class="callout ok">
+        <b>Аналогия:</b> отдельные комнаты с замками в одном здании — пожар в одной не перекинется на другие.
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Wi-Fi: WPA2 vs WPA3 -->
+  <section class="slide">
+    <h2>Wi-Fi: WPA2 vs WPA3</h2>
+    <table>
+      <tr><th></th><th>WPA2</th><th>WPA3</th></tr>
+      <tr><td>Шифрование</td><td>AES-CCMP</td><td>AES-GCMP</td></tr>
+      <tr><td>Защита от подбора</td><td>Уязвим (offline-подбор)</td><td>SAE (защита от offline)</td></tr>
+      <tr><td>Статус</td><td>Устаревает</td><td><b>Современный стандарт</b></td></tr>
+    </table>
+    <div class="callout warn">
+      <b>WPS — отключить.</b> Уязвим к подбору PIN (Pixie Dust). Кнопка WPS на роутере — риск.
+    </div>
+  </section>
+
+  <!-- 12. Evil twin и защита Wi-Fi -->
+  <section class="slide">
+    <h2>Evil twin и защита Wi-Fi</h2>
+    <div class="grid">
+      <div class="card d">
+        <h3>Evil twin</h3>
+        <ul>
+          <li>Фальшивая точка с тем же именем</li>
+          <li>Не спрашивает пароль (открытая)</li>
+          <li>Сертификат сайта не совпадает</li>
+        </ul>
+      </div>
+      <div class="card a">
+        <h3>Защита</h3>
+        <ul>
+          <li>Проверять сертификаты</li>
+          <li>VPN в открытых сетях</li>
+          <li>Не подключаться к «знакомым» открытым сетям</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <b>DHCP snooping</b> — защита от rogue DHCP. <b>Port security</b> — ограничение MAC на порту. <b>Гостевая сеть</b> — отдельный VLAN.
+    </div>
+  </section>
+
+  <!-- 13. Практика -->
+  <section class="slide">
+    <h2>Практика</h2>
+    <div class="grid">
+      <div>
+        <h3>1. Сертификат</h3>
+        <div class="formula">openssl s_client -connect example.com:443 -servername example.com</div>
+        <h3>2. HSTS</h3>
+        <div class="formula">curl -sI https://example.com | grep -i strict-transport</div>
+      </div>
+      <div>
+        <h3>3. Firewall (Linux)</h3>
+        <div class="formula">sudo ufw default deny incoming<br>sudo ufw allow 22/tcp<br>sudo ufw allow 443/tcp<br>sudo ufw enable</div>
+        <h3>4. Wi-Fi</h3>
+        <p class="muted">Проверьте тип безопасности (WPA2/WPA3), отключён ли WPS, есть ли гостевая сеть.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. Мини-проверка -->
+  <section class="slide">
+    <h2>Мини-проверка</h2>
+    <div class="case"><b>1.</b> Чем sniffing отличается от MITM?</div>
+    <div class="case"><b>2.</b> Что даёт TLS? Назовите три свойства.</div>
+    <div class="case"><b>3.</b> Что такое HSTS и зачем он нужен?</div>
+    <div class="case"><b>4.</b> Чем VPN отличается от HTTPS?</div>
+    <div class="case"><b>5.</b> Почему WPS лучше отключить?</div>
+    <button class="reveal-btn" onclick="toggle('ans3', this)">Показать ответы</button>
+    <div class="callout ok answers" id="ans3" hidden>
+      <b>1.</b> Sniffing — пассивно слушает; MITM — встаёт между и может менять.<br>
+      <b>2.</b> Конфиденциальность, аутентификация, целостность.<br>
+      <b>3.</b> Заставляет браузер использовать только HTTPS; защита от SSL-stripping.<br>
+      <b>4.</b> VPN шифрует канал, HTTPS — конкретное соединение с сайтом; VPN не заменяет HTTPS.<br>
+      <b>5.</b> WPS уязвим к подбору PIN (Pixie Dust).
+    </div>
+  </section>
+
+  <!-- 15. Итоги -->
+  <section class="slide">
+    <h2>Итоги урока</h2>
+    <ul>
+      <li><b>Угрозы:</b> sniffing, MITM, ARP-spoofing, DDoS, evil twin.</li>
+      <li><b>HTTPS/TLS:</b> шифрование, сертификат (CA), HSTS.</li>
+      <li><b>VPN:</b> шифрованный туннель; не заменяет HTTPS, но защищает канал.</li>
+      <li><b>Firewall:</b> фильтр по правилам; default deny.</li>
+      <li><b>Сегментация:</b> VLAN изолирует сегменты.</li>
+      <li><b>Wi-Fi:</b> WPA3, отключить WPS, DHCP snooping, гостевая сеть.</li>
+    </ul>
+    <h3>Вопросы для самопроверки</h3>
+    <ol>
+      <li>Чем sniffing отличается от MITM?</li>
+      <li>Что даёт TLS? Три свойства.</li>
+      <li>Что такое HSTS?</li>
+      <li>Чем VPN отличается от HTTPS?</li>
+      <li>Что такое default deny?</li>
+      <li>Почему WPS лучше отключить?</li>
+      <li>Как распознать evil twin?</li>
+    </ol>
+  </section>
+
+  <!-- 16. Финал -->
+  <section class="slide">
+    <h2>Спасибо за внимание</h2>
+    <p class="lead">Вопросы?</p>
+    <div class="callout ok" style="margin-top:24px">
+      <b>Следующий урок:</b> безопасность веб-приложений и API — OWASP, инъекции, XSS, CSRF.
+    </div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Назад">←</button>
+  <span class="counter" id="counter">1 / 16</span>
+  <button id="next" aria-label="Вперёд">→</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  let i = 0;
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s,k) => s.classList.toggle('active', k === i));
+    counter.textContent = (i+1) + ' / ' + slides.length;
+    progress.style.width = ((i+1)/slides.length*100) + '%';
+    slides[i].scrollTop = 0;
+  }
+  document.getElementById('next').onclick = () => show(i+1);
+  document.getElementById('prev').onclick = () => show(i-1);
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight',' ','PageDown'].includes(e.key)) { e.preventDefault(); show(i+1); }
+    if (['ArrowLeft','PageUp'].includes(e.key)) { e.preventDefault(); show(i-1); }
+    if (e.key === 'Home') show(0);
+    if (e.key === 'End') show(slides.length-1);
+    if (e.key.toLowerCase() === 'f') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+
+  let x0 = null;
+  document.addEventListener('touchstart', e => x0 = e.touches[0].clientX, {passive:true});
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1));
+    x0 = null;
+  }, {passive:true});
+
+  function toggle(id, btn){
+    const el = document.getElementById(id);
+    el.hidden = !el.hidden;
+    btn.textContent = el.hidden ? 'Показать ответ' : 'Скрыть ответ';
+  }
+
+  show(0);
+</script>
+</body>
+</html>
